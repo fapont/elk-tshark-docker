@@ -1,0 +1,71 @@
+version: '3.9'
+services: 
+    elasticsearch:
+        build:
+            context: elasticsearch/
+        volumes:
+            - type: bind
+              source: ./elasticsearch/elasticsearch.yml
+              target: /usr/share/elasticsearch/config/elasticsearch.yml
+            - type: volume
+              source: ./elasticsearch
+              target: /usr/share/elasticsearch/data
+        ports:
+            - "9200:9200" # REST API
+            - "9300:9300" # nodes communication
+        environment:
+            ELASTIC_PASSWORD: incredible_password
+            discovery.type: single-node # only for development
+        networks: 
+            - elk
+        mem_limit: 1g 
+
+
+    packetbeat:
+        build:
+            context: packetbeat/
+        user: packetbeat
+        volumes:
+            - type: bind
+              source: ./packetbeat/packetbeat.yml
+              target: /usr/share/packetbeat/packetbeat.yml
+            - type: bind # pcap files
+              source: ./data
+              target: /usr/share/packetbeat/pcaps
+            - ./packetbeat/run.sh:/usr/share/packetbeat/run.sh
+        depends_on: 
+            - "elasticsearch"
+        networks: 
+            - elk
+        cap_add: # needed by packetbeat
+              - NET_ADMIN
+        healthcheck: # Check if elasticsearch is reachable
+          test: ["CMD", "curl", "-f", "http://elasticsearch:9200"]
+          interval: 5s
+        # Override default entry point to read file instead of recording network
+        # entrypoint: ['./packetbeat', '-e', '-c', 'packetbeat.yml', '-t', '-I', 'pcaps/file.pcap', '-d', '"publish"']
+        entrypoint: ['bash', 'run.sh']
+
+
+    kibana:
+        build:
+            context: kibana/
+        volumes:
+            - type: bind
+              source: ./kibana/kibana.yml
+              target: /usr/share/kibana/config/kibana.yml
+        ports:
+            - "5601:5601"
+        networks: 
+            - elk
+        depends_on: 
+            - "elasticsearch"
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  elasticsearch:
+  data:
+
