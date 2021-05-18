@@ -1,0 +1,16 @@
+filebeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    reload.enabled: false
+
+filebeat.inputs:
+- input_type: log
+  paths:
+    - /data/*.json
+  document_type: "pcap_file"
+  json.keys_under_root: true
+
+output.elasticsearch:
+  hosts: 'http://elasticsearch:9200'
+  username: 'elastic'
+  password: 'incredible_password'

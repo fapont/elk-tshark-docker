@@ -1,0 +1,73 @@
+version: '3.9'
+services: 
+    tshark:
+        image: toendeavour/tshark
+        volumes:
+            - type: bind
+              source: ./data
+              target: /data
+            - ./tshark/run.sh:/run.sh
+        entrypoint: ['/bin/sh', '/run.sh']
+
+    elasticsearch:
+        build:
+            context: elasticsearch/
+        volumes:
+            - type: bind
+              source: ./elasticsearch/elasticsearch.yml
+              target: /usr/share/elasticsearch/config/elasticsearch.yml
+            - type: volume
+              source: ./elasticsearch
+              target: /usr/share/elasticsearch/data
+        ports:
+            - "9200:9200" # REST API
+            - "9300:9300" # nodes communication
+        environment:
+            ELASTIC_PASSWORD: incredible_password
+            discovery.type: single-node # only for development
+        networks: 
+            - elk
+        mem_limit: 1g 
+        # Confirm availability of elasticsearch
+        healthcheck:
+            test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
+
+    kibana:
+        build:
+            context: kibana/
+        volumes:
+            - type: bind
+              source: ./kibana/kibana.yml
+              target: /usr/share/kibana/config/kibana.yml
+        ports:
+            - "5601:5601"
+        networks: 
+            - elk
+        depends_on: 
+            - "elasticsearch"
+
+    filetbeat:
+        build:
+            context: filebeat/
+        user: filebeat
+        volumes:
+            - type: bind
+              source: ./filebeat/filebeat.yml
+              target: /usr/share/filebeat/filebeat.yml
+            - type: bind # json files
+              source: ./data/json
+              target: /data
+        networks: 
+            - elk
+        cap_add: # needed by filebeat
+            - NET_ADMIN
+        depends_on: # wait for the end of tshark work
+            - "tshark"
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  elasticsearch:
+  data:
