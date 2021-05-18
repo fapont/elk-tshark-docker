@@ -1,0 +1,69 @@
+version: '3.9'
+services: 
+    elasticsearch:
+        build:
+            context: elasticsearch/
+        volumes:
+            - type: bind
+              source: ./elasticsearch/elasticsearch.yml
+              target: /usr/share/elasticsearch/config/elasticsearch.yml
+            - type: volume
+              source: ./elasticsearch
+              target: /usr/share/elasticsearch/data
+        ports:
+            - "9200:9200" # REST API
+            - "9300:9300" # nodes communication
+        environment:
+            ELASTIC_PASSWORD: incredible_password
+            discovery.type: single-node # only for development
+        networks: 
+            - elk
+        mem_limit: 1g 
+        healthcheck:
+            test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
+
+
+    packetbeat:
+        build:
+            context: packetbeat/
+        user: packetbeat
+        volumes:
+            - type: bind
+              source: ./packetbeat/packetbeat.yml
+              target: /usr/share/packetbeat/packetbeat.yml
+            - type: bind # pcap files
+              source: ./data
+              target: /usr/share/packetbeat/pcaps
+            - ./packetbeat/run.sh:/usr/share/packetbeat/run.sh
+        depends_on: 
+            elasticsearch: { condition: service_healthy }
+        networks: 
+            - elk
+        cap_add: # needed by packetbeat
+              - NET_ADMIN
+        # Override default entry point to read file instead of recording network -> NOT WORKING
+        # entrypoint: ['bash', 'run.sh']
+
+
+    kibana:
+        build:
+            context: kibana/
+        volumes:
+            - type: bind
+              source: ./kibana/kibana.yml
+              target: /usr/share/kibana/config/kibana.yml
+        ports:
+            - "5601:5601"
+        networks: 
+            - elk
+        depends_on: 
+            - "elasticsearch"
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  elasticsearch:
+  data:
+
