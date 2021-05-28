@@ -1,6 +1,7 @@
 version: '3.8'
 services: 
     tshark:
+        container_name: wireshark
         image: toendeavour/tshark
         volumes:
             - type: bind
@@ -10,6 +11,7 @@ services:
         entrypoint: ['/bin/sh', '/run.sh']
 
     elasticsearch:
+        container_name: elasticsearch
         build:
             context: elasticsearch/
         volumes:
@@ -33,6 +35,7 @@ services:
             test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
 
     kibana:
+        container_name: kibana
         build:
             context: kibana/
         volumes:
@@ -46,7 +49,32 @@ services:
         depends_on: 
             - "elasticsearch"
 
+    logstash:
+        container_name: logstash
+        build:
+            context: logstash/
+        volumes:
+            - type: bind
+              source: ./logstash/logstash.yml
+              target: /usr/share/logstash/config/logstash.yml
+            - type: bind
+              source: ./logstash/pipeline
+              target: /usr/share/logstash/pipeline
+        ports:
+            - "5044:5044"
+            - "5000:5000/tcp"
+            - "5000:5000/udp"
+            - "9600:9600"
+        mem_limit: 1g
+        networks:
+            - elk
+        depends_on:
+            elasticsearch: { condition: service_healthy }
+        healthcheck:
+            test: ["CMD", "curl","-s" ,"-f", "http://localhost:9600"]
+
     filetbeat:
+        container_name: filebeat
         build:
             context: filebeat/
         user: filebeat
@@ -61,8 +89,9 @@ services:
             - elk
         cap_add: # needed by filebeat
             - NET_ADMIN
-        depends_on: # wait for the end of tshark work
-            - "tshark"
+        depends_on: 
+            logstash: { condition: service_healthy }
+
 
 networks:
   elk:

@@ -32,7 +32,7 @@ Afin de lancer la stack, veuillez suivre les étapes suivantes:
 ```
     $ docker-compose up
 ```
-Attendez quelques minutes que l'architecture se lance et que les fichiers soient transcris.  Vous pouvez accéder à l'interface de Kibana à l'adresse suivante: [localhost:5601](localhost:5601).
+Attendez quelques minutes que l'architecture se lance et que les fichiers soient transcris.  Vous pouvez accéder à l'interface de Kibana à l'adresse suivante: [http://127.0.0.1:5601](http://127.0.0.1:5601/).
 
 Une fois que vous avez terminé vous pouvez stopper les conteneurs:
 ```
@@ -42,12 +42,14 @@ Une fois que vous avez terminé vous pouvez stopper les conteneurs:
 
 # Exemple
 - fichier utilisé
-- exemple de dashboard
 
-# Note sur le deuxième projet
-- but initial
-- problème rencontré
-- utilité finale
+### Création de l'index pattern
+Une fois que les données sont chargées dans **ElasticSearch**, vous devriez pouvoir créer un [Index Pattern](https://www.elastic.co/guide/en/kibana/current/index-patterns.html) depuis l'interface de **Kibana**. Sélectionnez la source provenant de **Filebeat** puis le Time field *@timestamp* (correspond au timestamp d'envoie des données par FileBeat). Une fois que cela est fait on peut analyser notre donnée grâce à l'onglet **Discover** ou alors en créant un dashboard personnalisé.
+
+**Note**: un index est l'équivalent d'une table dans une base de données relationelles (cf. [Mapping SQL/ElasticSearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/_mapping_concepts_across_sql_and_elasticsearch.html)).
+### Exemple de dashboard
+alalalala
+
 
 # Notes
 Initialement, je voulais utiliser [Packetbeat](https://www.elastic.co/fr/beats/packetbeat) afin de transcrire les fichiers ```.pcap``` et de les charger directement dans **ElasticSearch**. En effet, PacketBeat est utilisé pour enregistrer des flux réseaux et de les charger automatiquement dans ElasticSearch.
