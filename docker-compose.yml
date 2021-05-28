@@ -70,8 +70,6 @@ services:
             - elk
         depends_on:
             elasticsearch: { condition: service_healthy }
-        healthcheck:
-            test: ["CMD", "curl","-s" ,"-f", "http://localhost:9600"]
 
     filetbeat:
         container_name: filebeat
@@ -90,7 +88,7 @@ services:
         cap_add: # needed by filebeat
             - NET_ADMIN
         depends_on: 
-            logstash: { condition: service_healthy }
+            elasticsearch: { condition: service_healthy }
 
 
 networks:
